@@ -1,25 +1,36 @@
 import discord
 from discord.ext import commands
-import json
 import os
 
-# Load config
-with open("config.json", "r") as f:
-    config = json.load(f)
+# Preia variabilele din environment
+TOKEN = os.getenv("DISCORD_TOKEN")
+OWNER_ID = os.getenv("OWNER_ID")  # optional, pentru comenzi owner-only
+PREFIX = os.getenv("PREFIX", "!")  # optional, pentru comenzi text dacă vrei
 
 intents = discord.Intents.default()
-bot = commands.Bot(command_prefix="!", intents=intents)
+bot = commands.Bot(command_prefix=PREFIX, intents=intents)
 
 @bot.event
 async def on_ready():
-    print(f"Bot connected as {bot.user}")
-    await bot.tree.sync()
-    print("Slash commands synced.")
+    print(f"Bot conectat ca {bot.user}")
+    # sincronizare slash commands
+    try:
+        synced = await bot.tree.sync()
+        print(f"Slash commands sincronizate: {len(synced)}")
+    except Exception as e:
+        print(f"Eroare sincronizare slash commands: {e}")
 
-# Load cogs dynamically
+# Încarcă toate cogs din folderul cogs
 for filename in os.listdir("./cogs"):
     if filename.endswith(".py"):
-        bot.load_extension(f"cogs.{filename[:-3]}")
-        print(f"Loaded cog: {filename}")
+        try:
+            bot.load_extension(f"cogs.{filename[:-3]}")
+            print(f"Cog încărcată: {filename}")
+        except Exception as e:
+            print(f"Eroare la încărcarea cog-ului {filename}: {e}")
 
-bot.run(config["token"])
+# Porneste botul
+if TOKEN is None:
+    print("❌ Nu a fost găsit tokenul! Setează DISCORD_TOKEN în Pella.")
+else:
+    bot.run(TOKEN)
